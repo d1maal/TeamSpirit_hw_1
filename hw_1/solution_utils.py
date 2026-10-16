@@ -1,8 +1,9 @@
-"""Функции, которые импортирует solution.ipynb.
-брал как из четвертой лабы. остальное добавил сам.
-"""
+"""Функции для solution.ipynb.
 
-from __future__ import annotations
+текст как в задаче 18 лабы 4: буквы, стоп-слова, Snowball.
+стоп-слова лежат в artifacts/, интернет не нужен.
+реакция грузится из joblib в artifacts/.
+"""
 
 import csv
 import json
@@ -10,10 +11,7 @@ import re
 from pathlib import Path
 
 import joblib
-import nltk
-from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
-from sklearn.dummy import DummyClassifier
 from sklearn.metrics import (
     accuracy_score,
     adjusted_rand_score,
@@ -21,65 +19,93 @@ from sklearn.metrics import (
     normalized_mutual_info_score,
 )
 
-try:
-    stopwords.words("english")
-except LookupError:
-    nltk.download("stopwords", quiet=True)
-
 HERE = Path(__file__).resolve().parent
 ARTIFACTS = HERE / "artifacts"
 
 LETTERS = re.compile(r"[^\W\d_]+")
 ASCII_MAX = 127
-STOPWORDS = {
-    "english": set(stopwords.words("english")),
-    "russian": set(stopwords.words("russian")),
-}
-STEMMERS = {
-    "english": SnowballStemmer("english"),
-    "russian": SnowballStemmer("russian"),
+
+REACTION_MODEL_FILES = {
+    "Naive Bayes": "naive_bayes.joblib",
+    "Logistic Regression": "logistic_regression.joblib",
+    "SVM": "svm.joblib",
+    "decision_2x": "decision_2x.joblib",
+    "score_stacking_lr": "score_stacking_lr.joblib",
 }
 
 TOPIC_MODEL_NAMES = (
     "dummy",
     "bow_nb",
     "tfidf_logreg",
-    "tfidf_sublinear_C10",
+    "tfidf_linearsvc",
+    "tfidf_bigram_sublinear",
 )
 
 
-def mostly_russian(letters: str) -> bool:
-    """Больше половины букв вне ASCII - ставим русский стеммер"""
+def _read_stopwords(name):
+    path = ARTIFACTS / f"stopwords_{name}.txt"
+    words = []
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            word = line.strip()
+            if word:
+                words.append(word)
+    return set(words)
+
+
+STOPWORDS = {
+    "english": _read_stopwords("english"),
+    "russian": _read_stopwords("russian"),
+}
+STEMMERS = {
+    "english": SnowballStemmer("english"),
+    "russian": SnowballStemmer("russian"),
+}
+
+
+def mostly_russian(letters):
     if not letters:
         return False
-    non_ascii = sum(1 for ch in letters if ord(ch) > ASCII_MAX)
+    non_ascii = 0
+    for ch in letters:
+        if ord(ch) > ASCII_MAX:
+            non_ascii += 1
     return non_ascii > len(letters) / 2
 
 
-def normalize(text: str) -> list[str]:
-    """нижний регистр, слова из букв, без стоп-слов, основа слов"""
+def normalize(text):
     words = LETTERS.findall(text.lower())
     letters = "".join(words)
     language = "russian" if mostly_russian(letters) else "english"
-    stop, stemmer = STOPWORDS[language], STEMMERS[language]
-    return [stemmer.stem(word) for word in words if len(word) >= 2 and word not in stop]
+    stop = STOPWORDS[language]
+    stemmer = STEMMERS[language]
+    out = []
+    for word in words:
+        if len(word) < 2:
+            continue
+        if word in stop:
+            continue
+        out.append(stemmer.stem(word))
+    return out
 
 
-def dialog_text(dialog: dict) -> str:
-    """реплики одной строкой из нормализованных слов."""
-    user_parts = [turn["text"] for turn in dialog["turns"] if turn["role"] == "user"]
-    return " ".join(normalize(" ".join(user_parts)))
+def dialog_text(dialog):
+    parts = []
+    for turn in dialog["turns"]:
+        if turn["role"] == "user":
+            parts.append(turn["text"])
+    return " ".join(normalize(" ".join(parts)))
+
 
 def clean_text(text):
     text = re.sub(r"[\u3400-\u9fff]+", " ", text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
     text = re.sub(r"\n{3,}", "\n\n", text)
-
     return text.strip()
 
 
-def reaction_dialog_text(dialog: dict) -> str:
+def reaction_dialog_text(dialog):
     text = "\n".join(
         turn["role"] + ": " + turn["text"]
         for turn in dialog["turns"]
@@ -87,18 +113,21 @@ def reaction_dialog_text(dialog: dict) -> str:
     return clean_text(text)
 
 
-def read_dialogs(path: str) -> list[dict]:
+def read_dialogs(path):
     dialogs = []
     with open(path, encoding="utf-8") as fh:
         for line in fh:
-            if line.strip():
-                record = json.loads(line)
-                dialogs.append({"dialog_id": record["dialog_id"], "turns": record["turns"]})
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            dialogs.append({"dialog_id": record["dialog_id"], "turns": record["turns"]})
     return dialogs
 
 
-def read_labels(path: str, task: str) -> dict[str, str]:
+def read_labels(path, task):
     labels = {}
+    if not path:
+        return labels
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             if not line.strip():
@@ -110,30 +139,31 @@ def read_labels(path: str, task: str) -> dict[str, str]:
     return labels
 
 
-
-def init_reaction_models(train_path: str) -> dict:
-    """Загружаем обученные модели первой задачи."""
-    del train_path
-
-    filenames = {"Naive Bayes": "naive_bayes.joblib", "Logistic Regression": "logistic_regression.joblib", "SVM": "svm.joblib", 
-                 "decision_2x": "decision_2x.joblib", "score_stacking_lr": "score_stacking_lr.joblib"}
+def init_reaction_models(train_path):
+    _ = train_path
     models = {}
-
-    for name, filename in filenames.items():
-        models[name] = joblib.load(ARTIFACTS / filename)
-
+    for name, filename in REACTION_MODEL_FILES.items():
+        obj = joblib.load(ARTIFACTS / filename)
+        # два файла - словари без predict, иначе solution.ipynb падает
+        if hasattr(obj, "predict"):
+            models[name] = obj
     return models
 
 
+def predict_reaction(model, dialogs):
+    texts = []
+    for dialog in dialogs:
+        texts.append(reaction_dialog_text(dialog))
+    pred = model.predict(texts)
+    out = []
+    for label in pred:
+        out.append(str(label))
+    return out
 
-def predict_reaction(model, dialogs: list[dict]) -> list[str]:
-    texts = [reaction_dialog_text(dialog) for dialog in dialogs]
-    return [str(label) for label in model.predict(texts)]
 
-
-def init_topic_models(train_path: str) -> dict:
-    """классификаторы тем из artifacts"""
-    del train_path
+def init_topic_models(train_path):
+    # train_path не используем: темы уже в joblib, на проверке кластеризовать нельзя
+    _ = train_path
     models = {}
     for name in TOPIC_MODEL_NAMES:
         path = ARTIFACTS / f"topic_{name}.joblib"
@@ -141,47 +171,79 @@ def init_topic_models(train_path: str) -> dict:
     return models
 
 
-def predict_topic(model, dialogs: list[dict]) -> list[str]:
-    texts = [dialog_text(dialog) for dialog in dialogs]
-    return [str(label) for label in model.predict(texts)]
+def predict_topic(model, dialogs):
+    texts = []
+    for dialog in dialogs:
+        texts.append(dialog_text(dialog))
+    pred = model.predict(texts)
+    out = []
+    for label in pred:
+        out.append(str(label))
+    return out
 
 
-def _training_data(train_path: str, task: str) -> tuple[list[str], list[str]]:
+def _training_data(train_path, task):
     labels = read_labels(train_path, task)
-    dialogs = [dialog for dialog in read_dialogs(train_path) if dialog["dialog_id"] in labels]
-    texts = [dialog_text(dialog) for dialog in dialogs]
-    targets = [labels[dialog["dialog_id"]] for dialog in dialogs]
+    dialogs = []
+    for dialog in read_dialogs(train_path):
+        if dialog["dialog_id"] in labels:
+            dialogs.append(dialog)
+    texts = []
+    targets = []
+    for dialog in dialogs:
+        texts.append(dialog_text(dialog))
+        targets.append(labels[dialog["dialog_id"]])
     return texts, targets
 
 
-def compute_metrics(dialogs: list[dict], predictions: list[str], labels: dict[str, str]) -> dict[str, float]:
-    pairs = [(labels[d["dialog_id"]], p) for d, p in zip(dialogs, predictions) if d["dialog_id"] in labels]
-    y_true = [true for true, _ in pairs]
-    y_pred = [pred for _, pred in pairs]
+def compute_metrics(dialogs, predictions, labels):
+    y_true = []
+    y_pred = []
+    for dialog, pred in zip(dialogs, predictions):
+        if dialog["dialog_id"] in labels:
+            y_true.append(labels[dialog["dialog_id"]])
+            y_pred.append(pred)
     return {"accuracy": accuracy_score(y_true, y_pred)}
 
 
-def _purity(y_true: list[str], y_pred: list[str]) -> float:
-    """Доля объектов, у которых в их предсказанной теме самая частая истинная метка"""
-    buckets: dict[str, list[str]] = {}
+def _purity(y_true, y_pred):
+    buckets = {}
     for true, pred in zip(y_true, y_pred):
-        buckets.setdefault(pred, []).append(true)
+        if pred not in buckets:
+            buckets[pred] = []
+        buckets[pred].append(true)
     correct = 0
     for members in buckets.values():
-        correct += max(members.count(label) for label in set(members))
-    return correct / len(y_true) if y_true else 0.0
+        best = 0
+        for label in set(members):
+            n = members.count(label)
+            if n > best:
+                best = n
+        correct += best
+    if not y_true:
+        return 0.0
+    return correct / len(y_true)
 
 
-def compute_partition_metrics(dialogs: list[dict], predictions: list[str], labels: dict[str, str]) -> dict[str, float]:
-    """ считать ARI, NMI, однородность, полнота, V-мера, чистота."""
-    pairs = [(labels[d["dialog_id"]], p) for d, p in zip(dialogs, predictions) if d["dialog_id"] in labels]
-    y_true = [true for true, _ in pairs]
-    y_pred = [pred for _, pred in pairs]
+def compute_partition_metrics(dialogs, predictions, labels):
+    y_true = []
+    y_pred = []
+    for dialog, pred in zip(dialogs, predictions):
+        if dialog["dialog_id"] in labels:
+            y_true.append(labels[dialog["dialog_id"]])
+            y_pred.append(pred)
     h, c, v = homogeneity_completeness_v_measure(y_true, y_pred)
-    return {"ARI": adjusted_rand_score(y_true, y_pred), "NMI": normalized_mutual_info_score(y_true, y_pred), "homogeneity": h, "completeness": c, "v_measure": v, "purity": _purity(y_true, y_pred)}
+    return {
+        "ARI": adjusted_rand_score(y_true, y_pred),
+        "NMI": normalized_mutual_info_score(y_true, y_pred),
+        "homogeneity": h,
+        "completeness": c,
+        "v_measure": v,
+        "purity": _purity(y_true, y_pred),
+    }
 
 
-def save_predictions(path: str, dialogs: list[dict], predictions: dict[str, dict[str, list[str]]]) -> None:
+def save_predictions(path, dialogs, predictions):
     with open(path, "w", encoding="utf-8", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(["dialog_id", "task", "model", "prediction"])

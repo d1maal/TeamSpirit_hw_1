@@ -1,7 +1,8 @@
-"""то же обучение, что в конце task2_topics.ipynb.
+"""пересборка тем и классификаторов.
 
-нужен, только если не хочется ждать Run All ноутбука, а artifacts
-надо перезаписать
+1) тот же tf-idf + pca + k-means на 14, что в ноутбуке.
+2) второй k-means только на кластере разное.
+3) классификаторы из лабы 4 и семинара 3. своя: биграммы + sublinear + сетка C.
 """
 
 from pathlib import Path
@@ -11,36 +12,26 @@ import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    accuracy_score,
-    adjusted_rand_score,
-    confusion_matrix,
-    f1_score,
-    silhouette_score,
-)
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
+from sklearn.svm import LinearSVC
 
-from solution_utils import ARTIFACTS, dialog_text
+from solution_utils import ARTIFACTS, TOPIC_MODEL_NAMES, dialog_text
 
 HERE = Path(__file__).resolve().parent
 DATA_PATH = HERE / "data" / "hw1_train.jsonl"
 FIG_DIR = HERE / "task2_figures"
 SEED = 42
-K_TOPICS = 14
-PCA_FIT = 350
-PCA_USE = 200
-
-# Та же сетка, что C_grid в задаче 16 лабораторной 4.
 C_GRID = [0.01, 0.1, 1, 10]
 
-TOPIC_NAMES = {
+FIRST_NAMES = {
     0: "деловые тексты",
     1: "обучение моделей",
     2: "история и политика",
@@ -57,6 +48,16 @@ TOPIC_NAMES = {
     13: "python",
 }
 
+# второй k-means k=5 на кластере 9, seed 42.
+# номера проверили руками по словам и примерам.
+LEFTOVER_TO_TOPIC = {
+    0: "разное",
+    1: "списки и примеры",
+    2: "списки и примеры",
+    3: "перевод",
+    4: "фанфики",
+}
+
 
 def load_records(path):
     records = []
@@ -67,16 +68,7 @@ def load_records(path):
     return records
 
 
-def user_text(dialog):
-    parts = []
-    for turn in dialog["turns"]:
-        if turn["role"] == "user":
-            parts.append(turn["text"])
-    return "\n".join(parts)
-
-
-def make_text_model(name):
-    """Ровно те пайплайны, что в задаче 19 лабораторной 4, плюс одна своя."""
+def make_text_model(name, C=1):
     if name == "dummy":
         return make_pipeline(
             CountVectorizer(),
@@ -92,17 +84,75 @@ def make_text_model(name):
             TfidfVectorizer(min_df=2),
             LogisticRegression(max_iter=2000),
         )
-    if name == "tfidf_logreg_C10":
+    if name == "tfidf_linearsvc":
         return make_pipeline(
             TfidfVectorizer(min_df=2),
-            LogisticRegression(C=10, max_iter=2000),
+            LinearSVC(max_iter=2000),
         )
-    if name == "tfidf_sublinear_C10":
+    if name == "tfidf_bigram_sublinear":
         return make_pipeline(
-            TfidfVectorizer(min_df=2, sublinear_tf=True),
-            LogisticRegression(C=10, max_iter=2000),
+            TfidfVectorizer(min_df=2, sublinear_tf=True, ngram_range=(1, 2)),
+            LogisticRegression(C=C, max_iter=2000),
         )
     raise ValueError(name)
+
+
+def group_ids(texts):
+    seen = {}
+    groups = []
+    next_id = 0
+    for text in texts:
+        if text not in seen:
+            seen[text] = next_id
+            next_id += 1
+        groups.append(seen[text])
+    return groups
+
+
+def split_by_group(texts, topics, groups, test_size=0.2):
+    """один и тот же текст целиком в train или в test. как группы в лабе 14-15."""
+    topic_of_group = {}
+    for g, topic in zip(groups, topics):
+        topic_of_group[g] = topic
+
+    unique_groups = list(topic_of_group.keys())
+    unique_topics = []
+    for g in unique_groups:
+        unique_topics.append(topic_of_group[g])
+
+    counts = {}
+    for t in unique_topics:
+        counts[t] = counts.get(t, 0) + 1
+    can_stratify = min(counts.values()) >= 2
+
+    if can_stratify:
+        g_train, g_test = train_test_split(
+            unique_groups,
+            test_size=test_size,
+            random_state=SEED,
+            stratify=unique_topics,
+        )
+    else:
+        g_train, g_test = train_test_split(
+            unique_groups,
+            test_size=test_size,
+            random_state=SEED,
+        )
+
+    train_set = set(g_train)
+    test_set = set(g_test)
+    texts_train = []
+    y_train = []
+    texts_test = []
+    y_test = []
+    for text, topic, g in zip(texts, topics, groups):
+        if g in train_set:
+            texts_train.append(text)
+            y_train.append(topic)
+        elif g in test_set:
+            texts_test.append(text)
+            y_test.append(topic)
+    return texts_train, texts_test, y_train, y_test
 
 
 def main():
@@ -115,120 +165,76 @@ def main():
         dialogs.append({"dialog_id": record["dialog_id"], "turns": record["turns"]})
 
     texts = []
-    dialog_ids = []
-    task_type = []
-    for record, dialog in zip(records, dialogs):
+    for dialog in dialogs:
         texts.append(dialog_text(dialog))
-        dialog_ids.append(dialog["dialog_id"])
-        labels = record.get("labels") or {}
-        task_type.append(labels.get("task_type"))
-
     print("диалогов:", len(texts))
 
-    # --- кластеры: тот же пайплайн, что в ноутбуке ---
     tfidf = TfidfVectorizer(min_df=5, max_df=0.9, sublinear_tf=True)
     matrix = tfidf.fit_transform(texts)
     dense = matrix.toarray()
-    pca = PCA(n_components=PCA_FIT, random_state=SEED).fit(dense)
-    cumulative = np.cumsum(pca.explained_variance_ratio_)
-    Z = pca.transform(dense)[:, :PCA_USE]
+    pca = PCA(n_components=350, random_state=SEED).fit(dense)
+    Z = pca.transform(dense)[:, :200]
 
-    plt.figure(figsize=(8, 3.5))
-    plt.plot(np.arange(1, PCA_FIT + 1), cumulative)
-    plt.axvline(PCA_USE, color="black", ls="--", lw=1)
-    plt.xlabel("число компонент")
-    plt.ylabel("накопленная доля дисперсии")
-    plt.tight_layout()
-    plt.savefig(FIG_DIR / "pca_variance.png", dpi=140)
-    plt.close()
+    km = KMeans(n_clusters=14, n_init=10, random_state=SEED).fit(Z)
+    first = km.labels_
 
-    # график k как на семинаре 5–6: инерция и силуэт
-    k_values = list(range(6, 21, 2))
-    inertias = []
-    silhouettes = []
-    rng = np.random.default_rng(SEED)
-    sil_idx = rng.choice(len(Z), size=2000, replace=False)
-    for k in k_values:
-        fit = KMeans(n_clusters=k, n_init=10, random_state=SEED).fit(Z)
-        inertias.append(fit.inertia_)
-        silhouettes.append(silhouette_score(Z[sil_idx], fit.labels_[sil_idx]))
-        print("k =", k, "инерция =", round(fit.inertia_), "силуэт =", round(silhouettes[-1], 3))
+    leftover_idx = []
+    leftover_rows = []
+    for i, c in enumerate(first):
+        if c == 9:
+            leftover_idx.append(i)
+            leftover_rows.append(Z[i])
+    leftover_rows = np.array(leftover_rows)
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 3.5))
-    axes[0].plot(k_values, inertias, "o-")
-    axes[0].axvline(K_TOPICS, color="black", ls="--", lw=1)
-    axes[0].set_xlabel("число кластеров k")
-    axes[0].set_ylabel("инерция")
-    axes[1].plot(k_values, silhouettes, "o-")
-    axes[1].axvline(K_TOPICS, color="black", ls="--", lw=1)
-    axes[1].set_xlabel("число кластеров k")
-    axes[1].set_ylabel("силуэт")
-    plt.tight_layout()
-    plt.savefig(FIG_DIR / "k_inertia_silhouette.png", dpi=140)
-    plt.close()
+    leftover_km = KMeans(n_clusters=5, n_init=10, random_state=SEED).fit(leftover_rows)
+    leftover_labels = leftover_km.labels_
 
-    km = KMeans(n_clusters=K_TOPICS, n_init=10, random_state=SEED).fit(Z)
-    cluster_ids = km.labels_
+    words = np.array(tfidf.get_feature_names_out())
+    leftover_idx_arr = np.array(leftover_idx)
+    print("второй k-means на кластере 9:")
+    for part in range(5):
+        in_part = leftover_labels == part
+        mean_weight = np.asarray(matrix[leftover_idx_arr[in_part]].mean(axis=0)).ravel()
+        top = words[mean_weight.argsort()[::-1][:8]]
+        print(part, int(in_part.sum()), " ".join(top))
+
     topics = []
-    for c in cluster_ids:
-        topics.append(TOPIC_NAMES[int(c)])
+    for i, c in enumerate(first):
+        if c != 9:
+            topics.append(FIRST_NAMES[int(c)])
+        else:
+            topics.append(None)
 
-    counts = pd.Series(topics).value_counts()
-    plt.figure(figsize=(8, 4.5))
-    counts.sort_values().plot.barh()
-    plt.xlabel("число диалогов")
-    plt.tight_layout()
-    plt.savefig(FIG_DIR / "topic_sizes.png", dpi=140)
-    plt.close()
+    pos = 0
+    for i in range(len(topics)):
+        if topics[i] is None:
+            topics[i] = LEFTOVER_TO_TOPIC[int(leftover_labels[pos])]
+            pos += 1
 
-    ward_idx = rng.choice(len(Z), size=2000, replace=False)
-    ward = AgglomerativeClustering(n_clusters=K_TOPICS, linkage="ward").fit_predict(Z[ward_idx])
-    print("Ward vs k-means ARI:", round(adjusted_rand_score(cluster_ids[ward_idx], ward), 3))
+    print("темы после второго k-means:")
+    print(pd.Series(topics).value_counts())
 
-    labeled_true = []
-    labeled_pred = []
-    for i, value in enumerate(task_type):
-        if value is not None:
-            labeled_true.append(value)
-            labeled_pred.append(cluster_ids[i])
-    print("ARI vs task_type:", round(adjusted_rand_score(labeled_true, labeled_pred), 3))
-
-    # --- классификатор: задача 19 лабораторной 4 ---
-    texts_train, texts_test, y_train, y_test = train_test_split(
-        texts,
-        topics,
-        test_size=0.2,
-        random_state=SEED,
-        stratify=topics,
-    )
+    groups = group_ids(texts)
+    texts_train, texts_test, y_train, y_test = split_by_group(texts, topics, groups)
     print("train:", len(texts_train), "test:", len(texts_test))
 
-    # Три базовые — dummy, bow_nb, tfidf_logreg.
-    # tfidf_logreg_C10 и tfidf_sublinear_C10 — те же сравнения, что в лабе.
-    BASELINES = ["dummy", "bow_nb", "tfidf_logreg"]
-    LAB19_EXTRA = ["tfidf_logreg_C10", "tfidf_sublinear_C10"]
-    TEXT_MODELS = BASELINES + LAB19_EXTRA
-
+    BASELINES = ["dummy", "bow_nb", "tfidf_logreg", "tfidf_linearsvc"]
     text_models = {}
     rows = []
-    for name in TEXT_MODELS:
+    for name in BASELINES:
         model = make_text_model(name)
         model.fit(texts_train, y_train)
         pred = model.predict(texts_test)
         text_models[name] = model
-        vectorizer = model[0]
-        rows.append({
-            "accuracy": accuracy_score(y_test, pred),
-            "macro_f1": f1_score(y_test, pred, average="macro"),
-            "n_features": len(vectorizer.get_feature_names_out()),
-        })
-        print(name, "accuracy", round(rows[-1]["accuracy"], 3), "macro_f1", round(rows[-1]["macro_f1"], 3))
+        acc = accuracy_score(y_test, pred)
+        f1 = f1_score(y_test, pred, average="macro")
+        n_features = len(model[0].get_feature_names_out())
+        rows.append({"accuracy": acc, "macro_f1": f1, "n_features": n_features})
+        print(name, "accuracy", round(acc, 3), "macro_f1", round(f1, 3))
 
-    text_table = pd.DataFrame(rows, index=TEXT_MODELS)
+    text_table = pd.DataFrame(rows, index=BASELINES)
 
-    # Своя модель: sublinear + биграммы, C подбираем GridSearchCV как в задаче 16.
-    # Метрика поиска — macro-F1, потому что тем несколько и они неравные
-    # (в лабе 16 был roc_auc, там задача была бинарная).
+    # своя: биграммы + sublinear, C только на train. семинар 4 + задача 16.
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
     search = GridSearchCV(
         make_pipeline(
@@ -244,9 +250,10 @@ def main():
     cv_table = pd.Series(dtype=float)
     for C, mean_score in zip(C_GRID, search.cv_results_["mean_test_score"]):
         cv_table.loc[C] = mean_score
-    print("CV по C:")
+    print("CV по C на train:")
     print(cv_table.round(3))
-    print("лучший C:", search.best_params_["logisticregression__C"])
+    best_C = search.best_params_["logisticregression__C"]
+    print("лучший C по CV:", best_C)
 
     plt.figure(figsize=(6, 3.5))
     plt.plot(C_GRID, cv_table.values, "o-")
@@ -258,13 +265,12 @@ def main():
     plt.close()
 
     pred_own = search.predict(texts_test)
-    text_models["tfidf_bigram_Csearch"] = search.best_estimator_
-    text_table.loc["tfidf_bigram_Csearch"] = {
+    text_models["tfidf_bigram_sublinear"] = search.best_estimator_
+    text_table.loc["tfidf_bigram_sublinear"] = {
         "accuracy": accuracy_score(y_test, pred_own),
         "macro_f1": f1_score(y_test, pred_own, average="macro"),
         "n_features": len(search.best_estimator_[0].get_feature_names_out()),
     }
-    print("\nтаблица")
     print(text_table.round(3))
 
     plt.figure(figsize=(8, 3.8))
@@ -275,7 +281,10 @@ def main():
     plt.savefig(FIG_DIR / "model_macro_f1.png", dpi=140)
     plt.close()
 
-    best_name = text_table["macro_f1"].idxmax()
+    # C уже выбран на train. hold-out только смотрим, победителя по нему не берем.
+    best_name = "tfidf_bigram_sublinear"
+    if text_table.loc["tfidf_logreg", "macro_f1"] > text_table.loc[best_name, "macro_f1"]:
+        print("на hold-out логистика выше своей, в отчёте это пишем")
     best_pred = text_models[best_name].predict(texts_test)
     topic_order = sorted(set(topics))
     text_confusion = pd.DataFrame(
@@ -295,6 +304,14 @@ def main():
     plt.savefig(FIG_DIR / "confusion.png", dpi=140)
     plt.close()
 
+    counts = pd.Series(topics).value_counts().sort_values()
+    plt.figure(figsize=(8, 4.5))
+    counts.plot.barh()
+    plt.xlabel("число диалогов")
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "topic_sizes.png", dpi=140)
+    plt.close()
+
     best_pair = None
     best_count = -1
     for i, topic_a in enumerate(topic_order):
@@ -303,33 +320,48 @@ def main():
             if count > best_count:
                 best_count = count
                 best_pair = (topic_a, topic_b)
-    print("лучшая модель:", best_name)
-    print("чаще всего путает:", best_pair, "ошибок", best_count)
+    print("своя модель на hold-out, чаще путает:", best_pair, best_count)
 
-    # Для сдачи переучиваем выбранные модели на всех 10k.
-    # В artifacts кладём три базовые и свою.
-    save_names = ["dummy", "bow_nb", "tfidf_logreg", "tfidf_sublinear_C10"]
-    best_C = search.best_params_["logisticregression__C"]
+    save_names = list(TOPIC_MODEL_NAMES)
     for name in save_names:
-        model = make_text_model(name)
+        if name == "tfidf_bigram_sublinear":
+            model = make_text_model(name, C=best_C)
+        else:
+            model = make_text_model(name)
         model.fit(texts, topics)
         joblib.dump(model, ARTIFACTS / f"topic_{name}.joblib")
         print("сохранено", name)
 
+    # старый файл больше не сдаем
+    old = ARTIFACTS / "topic_tfidf_sublinear_C10.joblib"
+    if old.exists():
+        old.unlink()
+
     catalog = {
+        "topics": [],
         "metrics": {
             "holdout": text_table.round(4).to_dict(orient="index"),
-            "best_model": best_name,
+            "own_model": "tfidf_bigram_sublinear",
             "best_C": best_C,
             "cv_table": {str(k): round(float(v), 4) for k, v in cv_table.items()},
             "most_confused_pair": list(best_pair),
             "most_confused_count": best_count,
-        }
+            "n_topics": len(topic_order),
+            "raznoe_n": int((pd.Series(topics) == "разное").sum()),
+        },
     }
+    vc = pd.Series(topics).value_counts()
+    for name, n in vc.items():
+        catalog["topics"].append({"name": name, "n": int(n), "share": round(int(n) / len(topics), 4)})
     (ARTIFACTS / "topic_metrics.json").write_text(
         json.dumps(catalog, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    (ARTIFACTS / "topic_catalog.json").write_text(
+        json.dumps(catalog, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print("готово")
 
 
 if __name__ == "__main__":

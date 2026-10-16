@@ -1,49 +1,128 @@
 {
+  "topics": [
+    {
+      "name": "разное",
+      "n": 2152,
+      "share": 0.2152
+    },
+    {
+      "name": "рассказы",
+      "n": 1187,
+      "share": 0.1187
+    },
+    {
+      "name": "программирование",
+      "n": 1133,
+      "share": 0.1133
+    },
+    {
+      "name": "деловые тексты",
+      "n": 954,
+      "share": 0.0954
+    },
+    {
+      "name": "списки и примеры",
+      "n": 887,
+      "share": 0.0887
+    },
+    {
+      "name": "задачи с числами",
+      "n": 866,
+      "share": 0.0866
+    },
+    {
+      "name": "написание текстов",
+      "n": 682,
+      "share": 0.0682
+    },
+    {
+      "name": "код со строгими типами",
+      "n": 499,
+      "share": 0.0499
+    },
+    {
+      "name": "python",
+      "n": 352,
+      "share": 0.0352
+    },
+    {
+      "name": "история и политика",
+      "n": 326,
+      "share": 0.0326
+    },
+    {
+      "name": "перевод",
+      "n": 314,
+      "share": 0.0314
+    },
+    {
+      "name": "промпты",
+      "n": 300,
+      "share": 0.03
+    },
+    {
+      "name": "таблицы",
+      "n": 138,
+      "share": 0.0138
+    },
+    {
+      "name": "обучение моделей",
+      "n": 114,
+      "share": 0.0114
+    },
+    {
+      "name": "фанфики",
+      "n": 51,
+      "share": 0.0051
+    },
+    {
+      "name": "трейдинг",
+      "n": 45,
+      "share": 0.0045
+    }
+  ],
   "metrics": {
     "holdout": {
       "dummy": {
-        "accuracy": 0.317,
-        "macro_f1": 0.0344,
-        "n_features": 69567
+        "accuracy": 0.215,
+        "macro_f1": 0.0221,
+        "n_features": 68970
       },
       "bow_nb": {
-        "accuracy": 0.632,
-        "macro_f1": 0.6887,
-        "n_features": 23920
+        "accuracy": 0.622,
+        "macro_f1": 0.694,
+        "n_features": 23979
       },
       "tfidf_logreg": {
-        "accuracy": 0.8025,
-        "macro_f1": 0.7894,
-        "n_features": 23920
+        "accuracy": 0.777,
+        "macro_f1": 0.7811,
+        "n_features": 23979
       },
-      "tfidf_logreg_C10": {
-        "accuracy": 0.833,
-        "macro_f1": 0.8351,
-        "n_features": 23920
+      "tfidf_linearsvc": {
+        "accuracy": 0.795,
+        "macro_f1": 0.8332,
+        "n_features": 23979
       },
-      "tfidf_sublinear_C10": {
-        "accuracy": 0.882,
-        "macro_f1": 0.8818,
-        "n_features": 23920
-      },
-      "tfidf_bigram_Csearch": {
-        "accuracy": 0.8735,
-        "macro_f1": 0.8686,
-        "n_features": 171607
+      "tfidf_bigram_sublinear": {
+        "accuracy": 0.863,
+        "macro_f1": 0.8705,
+        "n_features": 172076
       }
     },
-    "best_model": "tfidf_sublinear_C10",
+    "own_model": "tfidf_bigram_sublinear",
     "best_C": 10,
     "cv_table": {
-      "0.01": 0.0344,
-      "0.1": 0.1238,
-      "1.0": 0.7541,
-      "10.0": 0.8728
+      "0.01": 0.0221,
+      "0.1": 0.1479,
+      "1.0": 0.7665,
+      "10.0": 0.8675
     },
     "most_confused_pair": [
       "разное",
-      "рассказы"
+      "списки и примеры"
     ],
-    "most_confused_count": 32
+    "most_confused_count": 27,
+    "n_topics": 16,
+    "raznoe_n": 2152
   }
 }
