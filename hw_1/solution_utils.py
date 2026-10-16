@@ -110,13 +110,20 @@ def read_labels(path: str, task: str) -> dict[str, str]:
     return labels
 
 
+
 def init_reaction_models(train_path: str) -> dict:
-    """заглушки первой задачи"""
-    texts, labels = _training_data(train_path, "reaction")
-    return {
-        "dummy_most_frequent": DummyClassifier(strategy="most_frequent").fit(texts, labels),
-        "dummy_stratified": DummyClassifier(strategy="stratified", random_state=0).fit(texts, labels),
-    }
+    """Загружаем обученные модели первой задачи."""
+    del train_path
+
+    filenames = {"Naive Bayes": "naive_bayes.joblib", "Logistic Regression": "logistic_regression.joblib", "SVM": "svm.joblib", 
+                 "decision_2x": "decision_2x.joblib", "score_stacking_lr": "score_stacking_lr.joblib"}
+    models = {}
+
+    for name, filename in filenames.items():
+        models[name] = joblib.load(ARTIFACTS / filename)
+
+    return models
+
 
 
 def predict_reaction(model, dialogs: list[dict]) -> list[str]:
