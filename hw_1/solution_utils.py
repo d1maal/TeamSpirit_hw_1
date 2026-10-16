@@ -70,6 +70,22 @@ def dialog_text(dialog: dict) -> str:
     user_parts = [turn["text"] for turn in dialog["turns"] if turn["role"] == "user"]
     return " ".join(normalize(" ".join(user_parts)))
 
+def clean_text(text):
+    text = re.sub(r"[\u3400-\u9fff]+", " ", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    return text.strip()
+
+
+def reaction_dialog_text(dialog: dict) -> str:
+    text = "\n".join(
+        turn["role"] + ": " + turn["text"]
+        for turn in dialog["turns"]
+    )
+    return clean_text(text)
+
 
 def read_dialogs(path: str) -> list[dict]:
     dialogs = []
