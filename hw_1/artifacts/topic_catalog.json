@@ -1,0 +1,334 @@
+{
+  "topics": [
+    {
+      "cluster": 0,
+      "name": "деловые тексты",
+      "n": 954,
+      "share": 0.0954,
+      "top_words": [
+        "provid",
+        "manag",
+        "develop",
+        "use",
+        "busi",
+        "research",
+        "inform",
+        "work"
+      ],
+      "example_ids": [
+        "d3926edba04",
+        "dfbc6fbddad",
+        "d54f0e1303d"
+      ]
+    },
+    {
+      "cluster": 1,
+      "name": "обучение моделей",
+      "n": 114,
+      "share": 0.0114,
+      "top_words": [
+        "train",
+        "model",
+        "input",
+        "def",
+        "np",
+        "epoch",
+        "data",
+        "size"
+      ],
+      "example_ids": [
+        "d6502997d24",
+        "db3ba24ce13",
+        "da259ba5fff"
+      ]
+    },
+    {
+      "cluster": 2,
+      "name": "история и политика",
+      "n": 326,
+      "share": 0.0326,
+      "top_words": [
+        "war",
+        "govern",
+        "empir",
+        "world",
+        "state",
+        "countri",
+        "peopl",
+        "nation"
+      ],
+      "example_ids": [
+        "daf50ce94be",
+        "d2a69ce78d4",
+        "dabacd6d322"
+      ]
+    },
+    {
+      "cluster": 3,
+      "name": "трейдинг",
+      "n": 45,
+      "share": 0.0045,
+      "top_words": [
+        "df",
+        "signal",
+        "price",
+        "iloc",
+        "ema",
+        "symbol",
+        "candl",
+        "sell"
+      ],
+      "example_ids": [
+        "d5d3a1a4924",
+        "d9162c01cce",
+        "d0092776e22"
+      ]
+    },
+    {
+      "cluster": 4,
+      "name": "промпты",
+      "n": 300,
+      "share": 0.03,
+      "top_words": [
+        "ai",
+        "gpt",
+        "prompt",
+        "generat",
+        "model",
+        "use",
+        "chat",
+        "languag"
+      ],
+      "example_ids": [
+        "d3fbf9397ba",
+        "d19b9e4cda1",
+        "de1d31d89bc"
+      ]
+    },
+    {
+      "cluster": 5,
+      "name": "таблицы",
+      "n": 138,
+      "share": 0.0138,
+      "top_words": [
+        "column",
+        "sheet",
+        "cell",
+        "row",
+        "valu",
+        "dim",
+        "vba",
+        "code"
+      ],
+      "example_ids": [
+        "d65f2be203c",
+        "d49791fbae4",
+        "d356887989c"
+      ]
+    },
+    {
+      "cluster": 6,
+      "name": "рассказы",
+      "n": 1187,
+      "share": 0.1187,
+      "top_words": [
+        "like",
+        "make",
+        "would",
+        "one",
+        "stori",
+        "time",
+        "go",
+        "could"
+      ],
+      "example_ids": [
+        "dc6f4b5d47c",
+        "d10825c614d",
+        "d7a14922e70"
+      ]
+    },
+    {
+      "cluster": 7,
+      "name": "перевод",
+      "n": 236,
+      "share": 0.0236,
+      "top_words": [
+        "translat",
+        "english",
+        "chines",
+        "japanes",
+        "word",
+        "mean",
+        "languag",
+        "sentenc"
+      ],
+      "example_ids": [
+        "d249780e4e0",
+        "d7a929a5b94",
+        "d0a7645733d"
+      ]
+    },
+    {
+      "cluster": 8,
+      "name": "код со строгими типами",
+      "n": 499,
+      "share": 0.0499,
+      "top_words": [
+        "const",
+        "return",
+        "int",
+        "string",
+        "void",
+        "function",
+        "error",
+        "class"
+      ],
+      "example_ids": [
+        "d60309cce83",
+        "d6ff0bac901",
+        "d2bea70d7c4"
+      ]
+    },
+    {
+      "cluster": 9,
+      "name": "разное",
+      "n": 3168,
+      "share": 0.3168,
+      "top_words": [
+        "give",
+        "make",
+        "use",
+        "name",
+        "list",
+        "pleas",
+        "like",
+        "would"
+      ],
+      "example_ids": [
+        "d369f3d4204",
+        "d613a957d3d",
+        "dff46299b7e"
+      ]
+    },
+    {
+      "cluster": 10,
+      "name": "написание текстов",
+      "n": 682,
+      "share": 0.0682,
+      "top_words": [
+        "write",
+        "word",
+        "stori",
+        "vs",
+        "short",
+        "nba",
+        "season",
+        "pleas"
+      ],
+      "example_ids": [
+        "dd52dda499c",
+        "d830ec0ab02",
+        "d169663aabd"
+      ]
+    },
+    {
+      "cluster": 11,
+      "name": "задачи с числами",
+      "n": 866,
+      "share": 0.0866,
+      "top_words": [
+        "answer",
+        "question",
+        "number",
+        "use",
+        "follow",
+        "valu",
+        "calcul",
+        "one"
+      ],
+      "example_ids": [
+        "d036ce1d422",
+        "db3a1328f8e",
+        "d7bbfc8e147"
+      ]
+    },
+    {
+      "cluster": 12,
+      "name": "программирование",
+      "n": 1133,
+      "share": 0.1133,
+      "top_words": [
+        "code",
+        "use",
+        "file",
+        "error",
+        "want",
+        "data",
+        "creat",
+        "python"
+      ],
+      "example_ids": [
+        "d5eef6ffdf3",
+        "df1193a8431",
+        "d6abfa4adbc"
+      ]
+    },
+    {
+      "cluster": 13,
+      "name": "python",
+      "n": 352,
+      "share": 0.0352,
+      "top_words": [
+        "print",
+        "def",
+        "file",
+        "python",
+        "return",
+        "code",
+        "line",
+        "py"
+      ],
+      "example_ids": [
+        "d843b3f01c6",
+        "d29fb7f37dd",
+        "df85380a2f0"
+      ]
+    }
+  ],
+  "metrics": {
+    "holdout": {
+      "bow_nb": {
+        "accuracy": 0.632,
+        "macro_f1": 0.6887,
+        "n_features": 23920
+      },
+      "tfidf_logreg": {
+        "accuracy": 0.849,
+        "macro_f1": 0.8659,
+        "n_features": 23920
+      },
+      "tfidf_linearsvc": {
+        "accuracy": 0.829,
+        "macro_f1": 0.8475,
+        "n_features": 23920
+      },
+      "tfidf_bigram_Csearch": {
+        "accuracy": 0.8805,
+        "macro_f1": 0.897,
+        "n_features": 171607
+      }
+    },
+    "best_model": "tfidf_bigram_Csearch",
+    "best_C": {
+      "logisticregression__C": 10
+    },
+    "best_cv_macro_f1": 0.9093,
+    "most_confused_pair": [
+      "разное",
+      "рассказы"
+    ],
+    "most_confused_count": 48,
+    "ward_ari": 0.2433,
+    "task_type_ari": 0.0362
+  }
+}

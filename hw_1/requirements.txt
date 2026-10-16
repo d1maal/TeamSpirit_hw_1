@@ -1,0 +1,6 @@
+scikit-learn>=1.9
+nltk
+pandas
+numpy
+joblib
+matplotlib

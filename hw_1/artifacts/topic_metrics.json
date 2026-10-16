@@ -1,0 +1,49 @@
+{
+  "metrics": {
+    "holdout": {
+      "dummy": {
+        "accuracy": 0.317,
+        "macro_f1": 0.0344,
+        "n_features": 69567
+      },
+      "bow_nb": {
+        "accuracy": 0.632,
+        "macro_f1": 0.6887,
+        "n_features": 23920
+      },
+      "tfidf_logreg": {
+        "accuracy": 0.8025,
+        "macro_f1": 0.7894,
+        "n_features": 23920
+      },
+      "tfidf_logreg_C10": {
+        "accuracy": 0.833,
+        "macro_f1": 0.8351,
+        "n_features": 23920
+      },
+      "tfidf_sublinear_C10": {
+        "accuracy": 0.882,
+        "macro_f1": 0.8818,
+        "n_features": 23920
+      },
+      "tfidf_bigram_Csearch": {
+        "accuracy": 0.8735,
+        "macro_f1": 0.8686,
+        "n_features": 171607
+      }
+    },
+    "best_model": "tfidf_sublinear_C10",
+    "best_C": 10,
+    "cv_table": {
+      "0.01": 0.0344,
+      "0.1": 0.1238,
+      "1.0": 0.7541,
+      "10.0": 0.8728
+    },
+    "most_confused_pair": [
+      "разное",
+      "рассказы"
+    ],
+    "most_confused_count": 32
+  }
+}
