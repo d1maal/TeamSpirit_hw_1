@@ -127,7 +127,7 @@ def init_reaction_models(train_path: str) -> dict:
 
 
 def predict_reaction(model, dialogs: list[dict]) -> list[str]:
-    texts = [dialog_text(dialog) for dialog in dialogs]
+    texts = [reaction_dialog_text(dialog) for dialog in dialogs]
     return [str(label) for label in model.predict(texts)]
 
 
