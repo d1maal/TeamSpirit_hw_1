@@ -44,7 +44,8 @@ TOPIC_MODEL_NAMES = (
     "dummy",
     "bow_nb",
     "tfidf_logreg",
-    "tfidf_sublinear_C10",
+    "tfidf_linearsvc",
+    "tfidf_bigram_sublinear",
 )
 
 
