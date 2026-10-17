@@ -18,6 +18,9 @@ from reaction_models import Decision2xClassifier, ScoreStackingLRClassifier
 from sklearn.metrics import (
     accuracy_score,
     adjusted_rand_score,
+    balanced_accuracy_score,
+    classification_report,
+    f1_score,
     homogeneity_completeness_v_measure,
     normalized_mutual_info_score,
 )
@@ -101,7 +104,7 @@ def read_labels(path: str, task: str) -> dict[str, str]:
             if not line.strip():
                 continue
             record = json.loads(line)
-            label = (record.get("labels") or {}).get(task)
+            label = (record.get("labels") or record).get(task)
             if label is not None:
                 labels[record["dialog_id"]] = label
     return labels
@@ -166,7 +169,21 @@ def compute_metrics(dialogs: list[dict], predictions: list[str], labels: dict[st
     pairs = [(labels[d["dialog_id"]], p) for d, p in zip(dialogs, predictions) if d["dialog_id"] in labels]
     y_true = [true for true, _ in pairs]
     y_pred = [pred for _, pred in pairs]
-    return {"accuracy": accuracy_score(y_true, y_pred)}
+    if not pairs:
+        return {}
+    report = classification_report(
+        y_true, y_pred, labels=["negative", "neutral", "positive"],
+        output_dict=True, zero_division=0,
+    )
+    metrics = {
+        "macro_f1": f1_score(y_true, y_pred, labels=["negative", "neutral", "positive"], average="macro", zero_division=0),
+        "accuracy": accuracy_score(y_true, y_pred),
+        "balanced_accuracy": balanced_accuracy_score(y_true, y_pred),
+    }
+    for name in ["negative", "neutral", "positive"]:
+        for metric in ["precision", "recall", "f1-score"]:
+            metrics[f"{name}_{metric}"] = report[name][metric]
+    return metrics
 
 
 def _purity(y_true: list[str], y_pred: list[str]) -> float:
