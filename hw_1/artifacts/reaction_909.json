@@ -1,0 +1,13 @@
+{
+  "models": [
+    "Grisha_909",
+    "Stack_909"
+  ],
+  "n_train": 909,
+  "class_counts": {
+    "positive": 303,
+    "negative": 303,
+    "neutral": 303
+  },
+  "source_fingerprint": "65dd751d4589015790473925389b0c96993282f54e007da3bc0d6d8e71e5b6ff"
+}

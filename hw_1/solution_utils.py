@@ -113,25 +113,24 @@ def read_labels(path: str, task: str) -> dict[str, str]:
 
 
 def init_reaction_models(train_path: str) -> dict:
-    """Загружаем обученные модели первой задачи."""
-    del train_path
+    """Загрузить все обученные модели реакции."""
+    filenames = {
+        "Naive Bayes": "naive_bayes.joblib",
+        "Logistic Regression": "logistic_regression.joblib",
+        "SVM": "svm.joblib",
+    }
+    models = {name: joblib.load(ARTIFACTS / filename) for name, filename in filenames.items()}
 
-    filenames = {"Naive Bayes": "naive_bayes.joblib", "Logistic Regression": "logistic_regression.joblib", "SVM": "svm.joblib", 
-                 "decision_2x": "decision_2x.joblib", "score_stacking_lr": "score_stacking_lr.joblib"}
-    models = {}
+    base = joblib.load(ARTIFACTS / "decision_2x.joblib")
+    stack = joblib.load(ARTIFACTS / "score_stacking_lr.joblib")
+    models["decision_2x"] = Decision2xClassifier(base)
+    models["score_stacking_lr"] = ScoreStackingLRClassifier(base, stack)
 
-    base = joblib.load(ARTIFACTS / filenames["decision_2x"])
-    stack = joblib.load(ARTIFACTS / filenames["score_stacking_lr"])
-    for name, filename in filenames.items():
-        if name == "decision_2x":
-            models[name] = Decision2xClassifier(base)
-        elif name == "score_stacking_lr":
-            models[name] = ScoreStackingLRClassifier(base, stack)
-        else:
-            models[name] = joblib.load(ARTIFACTS / filename)
-
+    base_909 = joblib.load(ARTIFACTS / "grisha_909.joblib")
+    stack_909 = joblib.load(ARTIFACTS / "stack_909.joblib")
+    models["Grisha_909"] = Decision2xClassifier(base_909)
+    models["Stack_909"] = ScoreStackingLRClassifier(base_909, stack_909)
     return models
-
 
 
 def predict_reaction(model, dialogs: list[dict]) -> list[str]:
