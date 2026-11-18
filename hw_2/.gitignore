@@ -1,0 +1,9 @@
+data/*.jsonl
+data/*.zip
+.ipynb_checkpoints/
+__pycache__/
+.DS_Store
+predictions.csv
+reaction_metrics.csv
+artifacts/oof/
+CONTEXT.md

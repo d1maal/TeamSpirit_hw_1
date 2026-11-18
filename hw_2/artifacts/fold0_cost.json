@@ -1,0 +1,82 @@
+{
+ "hw1_naive_bayes": {
+  "fit_seconds": 4.680718124989653,
+  "predict_seconds": 0.5759879169927444,
+  "size_mb": 0.8235807418823242
+ },
+ "hw1_logistic_regression": {
+  "fit_seconds": 5.0717709160235245,
+  "predict_seconds": 0.5779542500094976,
+  "size_mb": 0.5947856903076172
+ },
+ "hw1_svm": {
+  "fit_seconds": 4.7553135409834795,
+  "predict_seconds": 0.5821709170122631,
+  "size_mb": 0.5947198867797852
+ },
+ "hw1_decision_2x": {
+  "fit_seconds": 13.348852458002511,
+  "predict_seconds": 1.8998670410073828,
+  "size_mb": 1.942056655883789
+ },
+ "hw1_score_stacking_lr": {
+  "fit_seconds": 65.59238433401333,
+  "predict_seconds": 1.6371137920068577,
+  "size_mb": 3.5459470748901367
+ },
+ "hw1_grisha_909": {
+  "fit_seconds": 3.5327889590116683,
+  "predict_seconds": 1.6043831249990035,
+  "size_mb": 1.950974464416504
+ },
+ "hw1_stack_909": {
+  "fit_seconds": 18.421385374997044,
+  "predict_seconds": 1.613729709002655,
+  "size_mb": 3.5548486709594727
+ },
+ "Tree": {
+  "fit_seconds": 10.61229545797687,
+  "predict_seconds": 1.2061591670208145,
+  "size_mb": 17.43321704864502
+ },
+ "Bagging": {
+  "fit_seconds": 21.514042249997146,
+  "predict_seconds": 1.4257951250183396,
+  "size_mb": 29.30363368988037
+ },
+ "Forest": {
+  "fit_seconds": 10.35064745802083,
+  "predict_seconds": 1.1956594999937806,
+  "size_mb": 30.456350326538086
+ },
+ "Forest_tfidf_300": {
+  "fit_seconds": 13.069755458011059,
+  "predict_seconds": 1.3609895420086104,
+  "size_mb": 58.07434940338135
+ },
+ "HGB": {
+  "fit_seconds": 16.070776708016638,
+  "predict_seconds": 1.3252279169973917,
+  "size_mb": 18.60377597808838
+ },
+ "LightGBM_d6": {
+  "fit_seconds": 13.338912209001137,
+  "predict_seconds": 1.2318849590083119,
+  "size_mb": 20.17155933380127
+ },
+ "CatBoost": {
+  "fit_seconds": 10.452843375009252,
+  "predict_seconds": 1.3201297080086078,
+  "size_mb": 17.552892684936523
+ },
+ "Stack_lr": {
+  "fit_seconds": 118.85073237499455,
+  "predict_seconds": 6.237170917011099,
+  "size_mb": 34.935303688049316
+ },
+ "hw2_stack": {
+  "fit_seconds": 106.68317754199961,
+  "predict_seconds": 4.264253375004046,
+  "size_mb": 62.97976589202881
+ }
+}

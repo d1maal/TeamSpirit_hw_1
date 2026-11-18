@@ -1,0 +1,9 @@
+scikit-learn>=1.9
+pandas
+numpy
+scipy
+joblib
+threadpoolctl
+matplotlib
+lightgbm>=4.7
+catboost>=1.2
